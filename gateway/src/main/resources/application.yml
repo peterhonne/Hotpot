@@ -1,0 +1,115 @@
+server:
+  port: 9084
+  reactive:
+    session:
+      cookie:
+        name: GATEWAY-CLIENT-SESSION
+
+reactor:
+  netty:
+    http:
+      server:
+        accessLogEnabled: true
+
+spring:
+  application:
+    name: '@pom.artifactId@'
+  session:
+    redis:
+      flush-mode: on_save
+      namespace: gateway:session
+  cloud:
+    zookeeper:
+      discovery:
+        instanceId: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${server.port}}}
+        healthCheckTlsSkipVerify: true
+        preferIpAddress: true
+      connectString: localhost:2181
+      healthCheckInterval: 15s
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: user-center
+          uri: lb://user-center
+          predicates:
+            Path=/user/**
+          filters:
+            - TokenRelay
+        - id: index
+          uri: lb://user-center
+          predicates:
+            Path=/index
+        - id: order-center
+          uri: lb://order-center
+          predicates:
+            Path=/order/**
+          filters:
+            - TokenRelay
+
+  thymeleaf:
+    cache: false
+  security:
+    oauth2:
+      client:
+        registration:
+          local-auth-server-oidc:
+            provider: spring
+            client-id: auth-server
+            client-secret: secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/{action}/oauth2/code/{registrationId}"
+            scope: openid, profile
+            client-name: my-auth-server-oidc
+#          local-auth-server-code:
+#            provider: spring
+#            client-id: auth-server
+#            client-secret: secret
+#            authorization-grant-type: authorization_code
+#            redirect-uri: "{baseUrl}/{action}/oauth2/code/{registrationId}"
+#            scope: profile
+#            client-name: my-auth-server-code
+        provider:
+          spring:
+            issuer-uri: http://127.0.0.1:9081
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.springframework.http: DEBUG
+    org.springframework.security: INFO
+    org.springframework.security.oauth2: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+
+management:
+  httpexchanges:
+    recording:
+      enabled: true
+  zipkin:
+    tracing:
+      endpoint: http://127.0.0.1:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 0.5
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true

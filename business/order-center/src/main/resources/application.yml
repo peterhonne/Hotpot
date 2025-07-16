@@ -1,0 +1,74 @@
+server:
+  port: 9085
+spring:
+  application:
+    name: '@pom.artifactId@'
+  kafka:
+    producer:
+      key-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      key-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+  cloud:
+    zookeeper:
+      discovery:
+        instanceId: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${server.port}}}
+        healthCheckTlsSkipVerify: true
+        preferIpAddress: true
+      connectString: localhost:2181
+      healthCheckInterval: 15s
+  datasource:
+    url: jdbc:log4jdbc:sqlserver://120.92.191.45:8000;databaseName=bi_flame
+    username: biadmin
+    password: arvatobi@2019$$
+    driver-class-name: net.sf.log4jdbc.DriverSpy
+#    url: jdbc:mysql://127.0.0.1:3306/hotpot?characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+#    username: root
+#    password: root@123
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+  thymeleaf:
+    cache: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9081/oauth2/jwks
+        opaquetoken:
+          client-id: auth-server
+          client-secret: secret
+          introspection-uri: http://127.0.0.1:9081/oauth2/introspect
+
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://127.0.0.1:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 0.5
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true

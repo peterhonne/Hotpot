@@ -1,0 +1,33 @@
+server:
+  port: 9083
+
+spring:
+  application:
+    name: '@pom.artifactId@'
+  cloud.gateway.discovery.locator.enabled: true
+  security:
+    user:
+      name: "user"
+      password: "password"
+  cloud:
+    zookeeper:
+      discovery:
+        instanceId: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${server.port}}}
+        healthCheckTlsSkipVerify: true
+        preferIpAddress: true
+        register: true
+      connectString: localhost:2181
+      healthCheckInterval: 15s
+  boot:
+    admin:
+      context-path: /admin
+      ui:
+        title: HotPot
+
+management:
+  security.enabled: false
+  endpoints:
+    web:
+      exposure.include: '*'
+  endpoint:
+    health.show-details: always

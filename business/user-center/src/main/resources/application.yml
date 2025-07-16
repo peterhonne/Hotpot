@@ -1,0 +1,71 @@
+server:
+  port: 9082
+
+
+spring:
+  application:
+    name: '@pom.artifactId@'
+  cloud:
+    zookeeper:
+      discovery:
+        instanceId: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${server.port}}}
+        healthCheckTlsSkipVerify: true
+        preferIpAddress: true
+      connectString: localhost:2181
+      healthCheckInterval: 15s
+  datasource:
+    url: jdbc:log4jdbc:sqlserver://127.0.0.1:8000;databaseName=hotpot
+    username: hotpot
+    password: hotpot123
+    driver-class-name: net.sf.log4jdbc.DriverSpy
+  thymeleaf:
+    cache: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9081/oauth2/jwks
+        opaquetoken:
+          client-id: auth-server
+          client-secret: secret
+          introspection-uri: http://127.0.0.1:9081/oauth2/introspect
+
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://127.0.0.1:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 0.5
+
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
